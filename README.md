@@ -129,6 +129,23 @@ Add nonReentrant to buyItem() function
 ```
 
 
+## Cancel Listing Function
+
+Only owner can cancel listing
+
+## Update Listing Function
+
+Only owner can cancel listing
+
+## Withdraw Proceeds Function
+
+
+
+
+
+
+
+
 
 
 
