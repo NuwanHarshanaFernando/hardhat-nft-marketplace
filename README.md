@@ -139,8 +139,94 @@ Only owner can cancel listing
 
 ## Withdraw Proceeds Function
 
+## Deploy
+Create a folder called deploy
 
+Create 01-deploy-nft-marketplace.js inside it
 
+Deploy
+
+```
+    $ hh deploy
+```
+
+## Add NFT Contract
+Create folder called "test" inside contracts folder
+Create a new file called "BasicNft.sol"
+In here we can add BasicNft.sol from tha last project
+
+Create 02-deploy-basic-nft.js file inside deploy folder
+
+Deploy again
+
+```
+    $ hh deploy
+```
+
+Both contracts are deployed now
+
+## NFT Marketplace Test
+
+Create file called "NftMarketplace.test.js" inside test/unit
+
+These 2 are identical, it's up to you
+
+```
+!developmentChains.includes(network.name) ? describe.skip : describe("Nft Marketplace Tests", function(){
+    let nftMarketPlaceContract, nftMarketPlace, basicNft, deployer, player
+    const PRICE = ethers.parseEther("0.1")
+    const TOKEN_ID = 0
+    beforeEach(async function(){
+        deployer = (await getNamedAccounts()).deployer
+        player = (await getNamedAccounts()).player
+        await deployments.fixture(["all"])
+        nftMarketPlaceContract = await ethers.getContract("NftMarketplace")
+        nftMarketPlace = await nftMarketPlace.connect(player)
+        basicNft = await ethers.getContract("BasicNft")
+    })
+})
+```
+
+```
+!developmentChains.includes(network.name) ? describe.skip : describe("Nft Marketplace Tests", function(){
+    let nftMarketPlace, basicNft, deployer, player
+    const PRICE = ethers.parseEther("0.1")
+    const TOKEN_ID = 0
+    beforeEach(async function(){
+        deployer = (await getNamedAccounts()).deployer
+        player = (await getNamedAccounts()).player
+        await deployments.fixture(["all"])
+        nftMarketPlace = await ethers.getContract("NftMarketplace")
+        basicNft = await ethers.getContract("BasicNft")
+    })
+})
+```
+
+Test Coverage
+
+```
+    hh coverage
+```
+
+## Scripts
+
+Create a folder called scripts
+
+Write scripts for mint NFTs, buying NFTs etc when write frontends later
+
+Create a file called "mint-and-list.js"
+
+Run node, it will deploy all contracts
+
+```
+yarn hardhat node
+```
+
+Then open a new terminal and run the created script
+
+```
+yarn hardhat run scripts/mint-and-list.js --network localhost
+```
 
 
 
