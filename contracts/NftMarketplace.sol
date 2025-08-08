@@ -2,13 +2,16 @@
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 error NftMarketplace__PriceMustBeAboveZero();
 error NftMarketplace__NotApprovedForMarketplace();
 error NftMarketplace__AlreadyListed(address nftAddress, uint256 tokenId);
 error NftMarketPlace__NotOwner();
+error NftMarketplace__NotListed(address nftAddress, uint256 tokenId);
+error NftMarketplace__PriceNotMet(address nftAddres, uint256 tokenId, uint256 price);
 
-contract NftMarketplace {
+contract NftMarketplace is ReentrancyGuard {
     struct Listing {
         uint256 price;
         address seller;
@@ -21,8 +24,18 @@ contract NftMarketplace {
         uint256 price
     );
 
+    event ItemBought(
+        address indexed buyer,
+        address indexed nftAddress,
+        uint256 indexed tokenId,
+        uint256 price
+    );
+
     // NFT Contract address -> NFT TokenID -> Listing
     mapping(address => mapping(uint256 => Listing)) private s_listings;
+
+    // Seller address -> Amount earned
+    mapping(address => uint256) private s_proceeds;
 
     ////////////////////
     // Modifiers //
@@ -50,6 +63,14 @@ contract NftMarketplace {
         address owner = nft.ownerOf(tokenId);
         if (spender != owner) {
             revert NftMarketPlace__NotOwner();
+        }
+        _;
+    }
+
+    modifier isListed(address nftAddress, uint256 tokenId) {
+        Listing memory listing = s_listings[nftAddress][tokenId];
+        if (listing.price <= 0) {
+            revert NftMarketplace__NotListed(nftAddress, tokenId);
         }
         _;
     }
@@ -93,6 +114,27 @@ contract NftMarketplace {
         }
         s_listings[nftAddress][tokenId] = Listing(price, msg.sender); //msg.sender is the seller
         emit itemListed(msg.sender, nftAddress, tokenId, price);
+    }
+
+    function buyItem(
+        address nftAddress,
+        uint256 tokenId
+    ) external payable nonReentrant isListed(nftAddress, tokenId) {
+        Listing memory listedItem = s_listings[nftAddress][tokenId];
+        if (msg.value < listedItem.price) {
+            revert NftMarketplace__PriceNotMet(nftAddress, tokenId, listedItem.price);
+        }
+        // We don't just send the seller the money...?
+        // Solidity has a pattern called pull_over_push (https://fravoll.github.io/solidity-patterns/pull_over_push.html)
+
+        // Sending the money to the user - NO
+        // Have them withdraw the money - YES ✅
+        s_proceeds[listedItem.seller] = s_proceeds[listedItem.seller] + msg.value;
+        delete (s_listings[nftAddress][tokenId]);
+        // TRANSFER
+        IERC721(nftAddress).safeTransferFrom(listedItem.seller, msg.sender, tokenId);
+        // check to make sure the NFT was transfered
+        emit ItemBought(msg.sender, nftAddress, tokenId, listedItem.price);
     }
 }
 
